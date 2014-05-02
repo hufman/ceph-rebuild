@@ -1,0 +1,10 @@
+Origin: ceph.hufman.me
+Label: ceph.hufman.me
+Codename: wheezy
+Architectures: armhf source
+Components: main
+Description: Unofficial Ceph ARM APT Repository
+SignWith: 11FF3F0F
+DebIndices: Packages Release . .gz .bz2
+DscIndices: Sources Release . .gz .bz2
+Contents: . .gz .bz2

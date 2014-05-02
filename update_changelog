@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+version=`grep '^ceph' debian/changelog | sed 's/.*(\(.*\)).*/\1/' | head -n 1`
+cat <<EOF >debian/changelog.dch
+ceph (${version}~arm1) stable; urgency=low
+
+  * Compiled for ARM
+
+ -- Unofficial Ceph ARM APT repository <ceph@hufman.me>  `LANG=C date -R`
+
+EOF
+cat debian/changelog >> debian/changelog.dch
+mv debian/changelog.dch debian/changelog

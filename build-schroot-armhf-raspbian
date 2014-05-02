@@ -1,0 +1,15 @@
+#!/bin/bash
+
+tmp=`mktemp -d`
+mkdir $tmp
+mkdir $tmp/usr
+mkdir $tmp/usr/bin
+cp /usr/bin/qemu-arm-static $tmp/usr/bin/
+sbuild-createchroot --components=main --make-sbuild-tarball=/var/lib/sbuild/wheezy-armhf-raspbian.tgz --arch=armhf --keyring /usr/share/keyrings/raspbian-archive-keyring.gpg wheezy $tmp http://archive.raspbian.org/raspbian
+sed -i 's/wheezy-armhf-sbuild/wheezy-armhf-raspbian-sbuild/g' /etc/schroot/chroot.d/wheezy-armhf-sbuild*
+rename -v 's/wheezy-armhf-sbuild/wheezy-armhf-raspbian-sbuild/g' /etc/schroot/chroot.d/wheezy-armhf-sbuild*
+
+echo 'dpkg --remove-architecture i386; dpkg --remove-architecture amd64; apt-get update' | sbuild-shell wheezy-armhf-raspbian
+
+echo 'apt-get install -y build-essential; apt-get build-dep -y ceph' | sbuild-shell wheezy-armhf-raspbian
+echo '/bin/echo -e "deb http://archive.raspbian.org/raspbian jessie main\ndeb-src http://archive.raspbian.org/raspbian jessie main" > /etc/apt/sources.list.d/jessie.list; apt-get update; apt-get install -y libleveldb-dev libsnappy-dev; rm /etc/apt/sources.list.d/jessie.list && apt-get update' | sbuild-shell wheezy-armhf-raspbian

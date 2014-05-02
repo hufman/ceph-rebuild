@@ -1,0 +1,25 @@
+#!/bin/bash
+# Given a url to a dsc, download it and its files into $PWD
+
+set -e
+
+url="$1"
+dsc=$(basename "$url")
+root=$(dirname "$url")/
+wget "$url" -O "$dsc"
+files=`cat "$dsc" | sed '1,/^Files:/d' | sed -E '/^\S/,$d'`
+while read line; do
+	name=$(echo "$line" | awk '{print $3}')
+	md5=$(echo "$line" | awk '{print $1}')
+	echo $name
+	wget $root$name -O $name
+	[ $md5 != `md5sum $name | awk '{print $1}'` ] && echo "Failed to verify md5sum of $name" && exit 1
+done < <(echo "$files")
+sha256s=`cat "$dsc" | sed '1,/^Checksums-Sha256:/d' | sed -E '/^\S/,$d'`
+while read line; do
+	name=$(echo "$line" | awk '{print $3}')
+	sha256=$(echo "$line" | awk '{print $1}')
+	[ $sha256 != `sha256sum $name | awk '{print $1}'` ] && echo "Failed to verify sha256sum of $name" && exit 1
+done < <(echo "$sha256s")
+
+echo Happy dance

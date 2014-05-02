@@ -1,0 +1,14 @@
+#!/bin/bash
+
+tmp=`mktemp -d`
+mkdir $tmp
+mkdir $tmp/usr
+mkdir $tmp/usr/bin
+cp /usr/bin/qemu-arm-static $tmp/usr/bin/
+sbuild-createchroot --components=main --make-sbuild-tarball=/var/lib/sbuild/wheezy-armhf-debian.tgz --arch=armhf wheezy $tmp http://ftp.debian.org/debian
+sed -i 's/wheezy-armhf-sbuild/wheezy-armhf-debian-sbuild/g' /etc/schroot/chroot.d/wheezy-armhf-sbuild*
+rename -v 's/wheezy-armhf-sbuild/wheezy-armhf-debian-sbuild/g' /etc/schroot/chroot.d/wheezy-armhf-sbuild*
+
+echo 'dpkg --remove-architecture i386; dpkg --remove-architecture amd64; apt-get update' | sbuild-shell wheezy-armhf-debian
+
+echo 'apt-get install -y build-essential; apt-get build-dep -y ceph' | sbuild-shell wheezy-armhf-debian

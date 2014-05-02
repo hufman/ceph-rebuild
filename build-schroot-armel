@@ -1,0 +1,8 @@
+#!/bin/bash
+
+tmp=`mktemp -d`
+mkdir $tmp/usr
+mkdir $tmp/usr/bin
+cp /usr/bin/qemu-arm-static $tmp/usr/bin/
+sbuild-createchroot --components=main --make-sbuild-tarball=/var/lib/sbuild/wheezy-armel.tgz --arch=armel wheezy $tmp http://ftp.debian.org/debian
+echo 'dpkg --print-foreign-architures | grep -q i386 && dpkg --remove-architecture i386; dpkg --print-foreign-architures | grep -q amd64 && dpkg --remove-architecture amd64; apt-get update; apt-get install -y build-essential; apt-get install -y openjdk-7-jdk; ln -s java-7-openjdk-armel /usr/lib/jvm/default-java' | sbuild-shell wheezy-armel

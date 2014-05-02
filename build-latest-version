@@ -1,0 +1,100 @@
+#!/bin/bash
+
+set -e
+
+keyid='11FF3F0F'
+release='wheezy'
+releasenum=d7
+base=`dirname "$(readlink -f "$0")"`
+cd "$base"
+build="$base/build"
+dist="$base/dist"
+repo="$base/repo"
+
+[ -d "$build" ] || mkdir "$build"
+[ -d "$dist" ] || mkdir "$dist"
+
+for branch in debian-testing debian; do
+	root=http://ceph.com/$branch/pool/main/c/ceph/
+	wget $root -r -L --accept dsc
+	dsc=$(ls ceph.com/$branch/pool/main/c/ceph/*dsc | sed 's/^.*\///' | python2 -c 'from sys import stdin; from pkg_resources import parse_version; print "\n".join(sorted((l.strip() for l in stdin.readlines()), key=parse_version))' | tail -n 1)
+	version=$(echo "$dsc" | sed 's/^[^_]*_\(.*\)\.dsc$/\1/')
+	newdsc=$(echo "$dsc" | sed 's/\.dsc$/~arm1'$releasenum'.dsc/')
+	newversion="$version"~arm1"$releasenum"
+
+	buildlocation="$build"/$(echo $dsc | sed -E 's/^([^_]*)_([^-]*)-.*$/\1-\2/')
+	for arch in armel armhf raspbian; do
+		rm -rf "$build"/*
+		variant=debian
+		[ $arch == raspbian ] && variant=raspbian && arch="armhf" && branch=`echo "$branch" | sed 's/debian/raspbian/'`
+		finallocation="$dist/$variant/$version/$arch/ceph_${newversion}_${arch}.deb"
+		finaldir=$(dirname "$finallocation")
+		sourcedir=$(dirname "$finaldir")
+		[ -d "$finaldir" ] || mkdir -p "$finaldir"
+		if ! [ -e $finallocation ]; then
+			echo "Building $version for $release/$arch"
+			# download the sources
+			if ! [ -e "$sourcedir/$newdsc" ]; then
+				pushd "$build"
+				"$base"/download_dsc "$root$dsc"
+				[ $? -eq 0 ] || exit 1
+				popd
+				# prepare the source
+				[ -d "$buildlocation" ] && rm -rf "$buildlocation"
+				pushd "$build"
+				dpkg-source -x $dsc
+				popd
+				pushd "$buildlocation"
+				sed -i 's/--with-debug$/--with-debug --without-tcmalloc/' $buildlocation/debian/rules
+				if [ "$variant" == "raspbian" ]; then
+					sed -i 's/--without-tcmalloc$/--without-tcmalloc --without-libatomic-ops/' $buildlocation/debian/rules
+				fi
+				grep -q ceph@hufman.me debian/changelog || "$base"/update_changelog
+				sed -i 's/~arm1)/~arm1'${releasenum}')/' debian/changelog
+				popd
+				sourced="-A --source --force-orig-source"
+			else
+				cp "$sourcedir/$newdsc" "$build"
+				cp "$sourcedir"/*gz "$build"
+				pushd "$build"
+				dpkg-source -x $newdsc
+				popd
+				sourced=""
+			fi
+
+			# build the thing
+			builder="${release}-${arch}"
+			[ "$arch" == "armhf" ] && builder="${release}-armhf-$variant"
+			pushd "$buildlocation"
+			sbuild --arch=$arch -d $release --chroot ${builder}-sbuild $sourced --keyid=11FF3F0F
+			popd  # source dir
+			pushd "$build"
+			dpkg-sig --sign builder -k "$keyid" *changes	# automatically signs debs too
+			"$base"/resign-changes *changes
+			cp *changes *deb "$finaldir"
+			if [ -n "$sourced" ]; then
+				cp "$newdsc" "$sourcedir"
+				files=`cat "$newdsc" | sed '1,/^Files:/d' | sed -E '/^\S/,$d'`
+				echo "$files" | while read line; do
+					name=$(echo "$line" | awk '{print $3}')
+					cp "$name" "$sourcedir"
+				done
+			fi
+			if [ "$variant" == "raspbian" ]; then
+				rename -v 's/armhf/raspbian/' *build
+			fi
+			cp *-20*build "$repo"/logs
+			popd # build/ dir
+		fi
+		if ! [ -e "$repo/$branch/pool/main/c/ceph/ceph_${newversion}_${arch}.deb" ]; then
+			# copy to repo
+			incoming="$repo/$branch/incoming"
+			cp "$finaldir"/*changes "$finaldir"/*deb "$incoming"
+			cp "$sourcedir"/*gz "$sourcedir"/*dsc "$incoming"
+			pushd "$repo/$branch"
+			reprepro -V --keepunreferencedfiles include $release incoming/*changes
+			rm incoming/*
+			popd # repo dir
+		fi
+	done
+done

@@ -1,0 +1,38 @@
+#!/bin/bash
+while [ -n "$1" ]; do
+	echo "$1" | grep -q '\.changes$' || continue
+	echo "Resigning $1"
+	out="$1".new
+	cat "$1" | sed '/^Checksums/,$d' > "$out"
+	files=`cat "$1" | sed '1,/^Files:/d' | sed -E '/^\S/,$d'`
+	echo "Checksums-Sha1:" >> "$out"
+	while read line; do
+		name=$(echo "$line" | awk '{print $5}')
+		path=$(dirname "$out")/"$name"
+		sum=`sha1sum "$path" | awk '{print $1}'`
+		size=`wc -c "$path" | awk '{print $1}'`
+		echo " $sum $size $name" >> "$out"
+	done < <(echo "$files")
+
+	echo "Checksums-Sha256:" >> "$out"
+	while read line; do
+		name=$(echo "$line" | awk '{print $5}')
+		path=$(dirname "$out")/"$name"
+		sum=`sha256sum "$path" | awk '{print $1}'`
+		size=`wc -c "$path" | awk '{print $1}'`
+		echo " $sum $size $name" >> "$out"
+	done < <(echo "$files")
+
+	echo "Files:" >> "$out"
+	while read line; do
+		section=$(echo "$line" | awk '{print $3}')
+		priority=$(echo "$line" | awk '{print $4}')
+		name=$(echo "$line" | awk '{print $5}')
+		path=$(dirname "$out")/"$name"
+		sum=`md5sum "$path" | awk '{print $1}'`
+		size=`wc -c "$path" | awk '{print $1}'`
+		echo " $sum $size $section $priority $name" >> "$out"
+	done < <(echo "$files")
+	mv "$out" "$1"
+	shift
+done

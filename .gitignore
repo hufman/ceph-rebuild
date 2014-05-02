@@ -1,0 +1,6 @@
+ceph.com/
+build/*
+dist/*
+repo/logs/*
+repo/*/*
+
