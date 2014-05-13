@@ -1,0 +1,5 @@
+# A bunch of common settings that the other modules may need
+KEYID='11FF3F0F'          # key id for gpg signing
+EMAIL='ceph@hufman.me'        # changelog email
+NAME='Unofficial Ceph ARM APT repository'   # name used for package changelog
+SUFFIX='arm1'   # appended to end of the package version

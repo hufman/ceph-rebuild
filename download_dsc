@@ -22,4 +22,4 @@ while read line; do
 	[ $sha256 != `sha256sum $name | awk '{print $1}'` ] && echo "Failed to verify sha256sum of $name" && exit 1
 done < <(echo "$sha256s")
 
-echo Happy dance
+true

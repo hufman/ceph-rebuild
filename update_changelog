@@ -1,12 +1,15 @@
 #!/bin/sh
+base=`dirname "$(readlink -f "$0")"`
+. "$base"/settings
+
 set -e
 version=`grep '^ceph' debian/changelog | sed 's/.*(\(.*\)).*/\1/' | head -n 1`
 cat <<EOF >debian/changelog.dch
-ceph (${version}~arm1) stable; urgency=low
+ceph (${version}~$SUFFIX) stable; urgency=low
 
   * Compiled for ARM
 
- -- Unofficial Ceph ARM APT repository <ceph@hufman.me>  `LANG=C date -R`
+ -- "$NAME" <"$EMAIL">  `LANG=C date -R`
 
 EOF
 cat debian/changelog >> debian/changelog.dch

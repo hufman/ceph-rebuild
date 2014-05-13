@@ -1,10 +1,21 @@
 #!/bin/bash
+set -e
 while [ -n "$1" ]; do
 	echo "$1" | grep -q '\.changes$' || continue
 	echo "Resigning $1"
+
+	# sign the dsc file
+	for dsc in *dsc; do
+		if ! grep -q 'PGP SIGNATURE' "$dsc"; then
+			gpg --clearsign --armor --quiet --batch "$dsc" && mv "$dsc".asc "$dsc"
+		fi
+	done
+
+	# rewrite the changes file
 	out="$1".new
 	cat "$1" | sed '/^Checksums/,$d' > "$out"
 	files=`cat "$1" | sed '1,/^Files:/d' | sed -E '/^\S/,$d'`
+
 	echo "Checksums-Sha1:" >> "$out"
 	while read line; do
 		name=$(echo "$line" | awk '{print $5}')

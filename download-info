@@ -1,0 +1,5 @@
+#!/bin/bash
+# Downloads all of the dsc files from the given website
+root="$1"
+[ -n "$root" ] || root="http://ceph.com/debian/pool/main/c/ceph/"
+wget "$root" -r -L --accept dsc

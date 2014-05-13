@@ -11,4 +11,4 @@ rename -v 's/wheezy-armhf-sbuild/wheezy-armhf-debian-sbuild/g' /etc/schroot/chro
 
 echo 'dpkg --remove-architecture i386; dpkg --remove-architecture amd64; apt-get update' | sbuild-shell wheezy-armhf-debian
 
-echo 'apt-get install -y build-essential; apt-get build-dep -y ceph' | sbuild-shell wheezy-armhf-debian
+echo 'apt-get install -y build-essential; apt-get install -y openjdk-7-jdk; ln -s java-7-openjdk-armhf /usr/lib/jvm/default-java; apt-get build-dep -y ceph' | sbuild-shell wheezy-armhf-debian

@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+
+# Builds the .dsc file located in the current directory
+# Requires the release, releasenum, and variant variables
+# arch - armel or armhf
+# release - wheezy
+# releasenum - d7, or other identifier for the package version
+# variant - debian or raspbian
+[ -z "$arch" ] && echo 'Please set $arch to something like armel or armhf' && exit 1
+[ -z "$release" ] && echo 'Please set $release to an sbuild release like wheezy' && exit 1
+[ -z "$variant" ] && echo 'Please set $variant to something like debian or raspbian' && exit 1
+
+base=`dirname "$(readlink -f "$0")"`
+source "$base"/settings
+
+dsc=$(ls *dsc | tail -n 1)
+[ -z "$dsc" ] && echo 'Please have a .dsc file in the current directory' && exit 1
+if echo "$dsc" | grep -q -F "$SUFFIX" ; then
+	newdsc="$dsc"
+else
+	newdsc=$(echo "$dsc" | sed 's/\.dsc$/~'$SUFFIX$releasenum'.dsc/')
+fi
+buildlocation=$(echo $dsc | sed -E 's/^([^_]*)_([^-]*)-.*$/\1-\2/')
+
+if ! [ -e "$newdsc" ]; then	# original source
+	# prepare the source
+	[ -d "$buildlocation" ] && rm -rf "$buildlocation"
+	dpkg-source -x $dsc
+	pushd "$buildlocation"
+	sed -i 's/--with-debug$/--with-debug --without-tcmalloc/' debian/rules
+	if [ "$variant" == "raspbian" ]; then
+		sed -i 's/--without-tcmalloc$/--without-tcmalloc --without-libatomic-ops/' debian/rules
+	fi
+	grep -q "$EMAIL" debian/changelog || "$base"/update_changelog
+	sed -i 's/~'$SUFFIX')/~'$SUFFIX${releasenum}')/' debian/changelog
+	popd
+	sourced="-A --source --force-orig-source"
+else		# reusing patched source
+	[ -d "$buildlocation" ] && rm -rf "$buildlocation"
+	dpkg-source -x $newdsc
+	sourced=""
+fi
+
+# build the thing
+builder="${release}-${arch}"
+[ "$arch" == "armhf" ] && builder="${release}-armhf-$variant"
+pushd "$buildlocation"
+sbuild --arch=$arch -d $release --chroot ${builder}-sbuild $sourced --keyid=$KEYID
+popd
+dpkg-sig --sign builder -k "$KEYID" *deb
+"$base"/resign-changes *changes		# dpkg-sig *changes doesn't update any other checksums or sign the dsc
