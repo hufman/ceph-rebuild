@@ -42,3 +42,123 @@ state.view = function(s) {
   ]);
 };
 
+buildstatus = function() {
+  var view = function(data) {
+    function is_being_built(type, distro, version, arch) {
+      var building = data['building'];
+      if (building != null) {
+        return building['type'] == type &&
+               building['distro'] == distro &&
+               building['version'] == version &&
+               building['arch'] == arch;
+      }
+      return false;
+    }
+
+    var table = [];
+    // make the header
+    table.push(m('caption', [m('h4', 'Build Status')]));
+    table.push(m('thead', [
+      m('tr', [
+        m('th', 'Branch'),
+        m('th', 'Debian armel'),
+        m('th', 'Debian armhf'),
+        m('th', 'Raspbian')
+      ])
+    ]));
+    var rows = [];
+
+    var branches = ['debian', 'debian-testing'];
+    var columns = [{'type':'debian', 'dist': 'wheezy', 'arch':'armel'},
+                   {'type':'debian', 'dist': 'wheezy', 'arch':'armhf'},
+                   {'type':'raspbian', 'dist': 'wheezy', 'arch':'armhf'}
+                  ];
+    for (var b=0; b < branches.length; b++) {
+      var branch_name = branches[b];
+      var branch_data = data['branches'][branch_name];
+      var branch_version = branch_data['version'];
+      var row = [];
+      row.push(m('th', [
+        m('span', branch_name),
+        m('span', ' ('+branch_version+')')
+      ]));
+      for (var c=0; c < columns.length; c++) {
+        var format = columns[c];
+        var version = null;
+        var version_log = null;
+        if (branch_data['posted'][format['type']] &&
+            branch_data['posted'][format['type']][format['dist']] &&
+            branch_data['posted'][format['type']][format['dist']][format['arch']]) {
+          version = branch_data['posted'][format['type']][format['dist']][format['arch']];
+        }
+        if (data['build_logs'] &&
+            data['build_logs'][format['type']] &&
+            data['build_logs'][format['type']][format['dist']] &&
+            data['build_logs'][format['type']][format['dist']][branch_version]) {
+          version_log = data['build_logs'][format['type']][format['dist']][branch_version];
+        }
+
+        var text = '';
+        var klass = '';
+        var link = null;
+        if (version == branch_version) {
+          // repo has current version
+          text = version;
+          klass = 'success';
+          if (version_log[format['arch']]) {
+            link = version_log[format['arch']];
+          }
+        } else {
+          // has none or an old version in the repo
+          if (is_being_built(format['type'], format['dist'], branch_version, format['arch'])) {
+            text = 'Building: '+branch_version;
+            klass = 'warning';
+          } else if (version_log && version_log.hasOwnProperty(format['arch'])) {
+            // successfully built new package
+            text = 'Built: '+branch_version;
+            klass = 'warning';
+            if (version_log[format['arch']]) {
+              link = version_log[format['arch']];
+            }
+          } else {
+            // not built or building
+            if (version != null) {
+              // still have old package
+              text = 'Outdated: '+version;
+              klass = 'warning';
+            } else {
+              // never built
+              text = 'Not built';
+              klass = 'danger';
+            }
+          }
+        }
+        var statuschildren = [];
+        if (link) {
+          statuschildren = [m('a', {'href': link}, text)];
+        } else {
+          statuschildren = [m('span', text)];
+        }
+        row.push(m('td', {'class': klass}, statuschildren));
+      }
+      rows.push(m('tr', row));
+    }
+    table.push(m('tbody', rows));
+    return m('table', {'class': 'table'}, table);
+  };
+
+  function load_build_status() {
+    function reqComplete() {
+      var data = JSON.parse(request.responseText);
+      m.render(document.getElementById('buildstatus'), view(data));
+    }
+    var request = new XMLHttpRequest();
+    request.addEventListener("load", reqComplete, false);
+    request.open("GET", "status.json");
+    request.send();
+  }
+
+  return {
+    load: load_build_status
+  };
+}();

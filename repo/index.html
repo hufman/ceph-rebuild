@@ -35,12 +35,15 @@ EOF
 apt-get update
 </pre>
 </div>
+<div id="buildstatus"></div>
 </body>
+
 <script>
 while (window.installinstructions.hasChildNodes()) {
   window.installinstructions.removeChild(window.installinstructions.lastChild);
 }
 m.module(window.installinstructions, state);
+window.buildstatus.load();
 </script>
 </html>
 

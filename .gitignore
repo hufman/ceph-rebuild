@@ -3,4 +3,5 @@ build/*
 dist/*
 repo/logs/*
 repo/*/*
+repo/status.json
 
