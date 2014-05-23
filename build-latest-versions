@@ -15,7 +15,7 @@ source "$base"/settings
 [ -d "$build" ] || mkdir "$build"
 [ -d "$dist" ] || mkdir "$dist"
 
-for branch in debian debian-testing; do
+for branch in debian debian-testing debian-firefly; do
 	root=http://ceph.com/$branch/pool/main/c/ceph/
 	"$base"/download-info "$root"
 	./status.py > repo/status.json

@@ -67,7 +67,7 @@ buildstatus = function() {
     ]));
     var rows = [];
 
-    var branches = ['debian', 'debian-testing'];
+    var branches = ['debian', 'debian-testing', 'debian-firefly'];
     var columns = [{'type':'debian', 'dist': 'wheezy', 'arch':'armel'},
                    {'type':'debian', 'dist': 'wheezy', 'arch':'armhf'},
                    {'type':'raspbian', 'dist': 'wheezy', 'arch':'armhf'}
