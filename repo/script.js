@@ -57,7 +57,6 @@ buildstatus = function() {
 
     var table = [];
     // make the header
-    table.push(m('caption', [m('h4', 'Build Status')]));
     table.push(m('thead', [
       m('tr', [
         m('th', 'Branch'),
@@ -113,6 +112,7 @@ buildstatus = function() {
           if (is_being_built(format['type'], format['dist'], branch_version, format['arch'])) {
             text = 'Building: '+branch_version;
             klass = 'warning';
+            link = 'logs/current.build';
           } else if (version_log && version_log.hasOwnProperty(format['arch'])) {
             // successfully built new package
             text = 'Built: '+branch_version;
@@ -144,7 +144,10 @@ buildstatus = function() {
       rows.push(m('tr', row));
     }
     table.push(m('tbody', rows));
-    return m('table', {'class': 'table'}, table);
+    return m('div', [
+      m('h3', 'Build Status'),
+      m('table', {'class': 'table'}, table)
+    ]);
   };
 
   function load_build_status() {
@@ -160,5 +163,27 @@ buildstatus = function() {
 
   return {
     load: load_build_status
+  };
+}();
+
+buildlog = function() {
+  var view = function(data) {
+    window.setTimeout(load_build_log, 2000);
+    return m('div', [
+      m('h3', 'Build log'),
+      m('pre', {'class': 'build'}, data)
+    ]);
+  };
+  function load_build_log() {
+    function reqComplete() {
+      m.render(document.getElementById('buildlog'), view(request.responseText));
+    }
+    var request = new XMLHttpRequest();
+    request.addEventListener("load", reqComplete, false);
+    request.open("GET", "logs/tail.build");
+    request.send();
+  }
+  return {
+    load: load_build_log
   };
 }();

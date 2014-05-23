@@ -21,6 +21,7 @@ if echo "$dsc" | grep -q -F "$SUFFIX" ; then
 else
 	newdsc=$(echo "$dsc" | sed 's/\.dsc$/~'$SUFFIX$releasenum'.dsc/')
 fi
+newversion=$(echo "$newdsc" | sed 's/.dsc$//')
 buildlocation=$(echo $dsc | sed -E 's/^([^_]*)_([^-]*)-.*$/\1-\2/')
 
 if ! [ -e "$newdsc" ]; then	# original source
@@ -41,6 +42,13 @@ else		# reusing patched source
 	dpkg-source -x $newdsc
 	sourced=""
 fi
+
+# set up build status
+child=0
+trap "kill $child" SIGINT SIGTERM EXIT
+ln -s "$newversion"_"$arch".build "current.build"
+sh -c "while true; do sleep 2; tail -n 20 current.build > tail.build; done" &
+child=$!
 
 # build the thing
 builder="${release}-${arch}"
