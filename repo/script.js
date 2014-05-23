@@ -152,6 +152,7 @@ buildstatus = function() {
 
   function load_build_status() {
     function reqComplete() {
+      window.setTimeout(load_build_status, 60000);
       if (request.status == 200) {
         var data = JSON.parse(request.responseText);
         m.render(document.getElementById('buildstatus'), view(data));
@@ -172,7 +173,6 @@ buildstatus = function() {
 
 buildlog = function() {
   var view = function(data) {
-    window.setTimeout(load_build_log, 2000);
     return m('div', [
       m('h3', 'Build log'),
       m('pre', {'class': 'build'}, data)
@@ -180,6 +180,7 @@ buildlog = function() {
   };
   function load_build_log() {
     function reqComplete() {
+      window.setTimeout(load_build_log, 2000);
       if (request.status == 200) {
         m.render(document.getElementById('buildlog'), view(request.responseText));
       } else {
