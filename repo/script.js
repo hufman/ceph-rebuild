@@ -3,7 +3,7 @@ var state = {
   deb: m.prop("debian"),
   distopts: ['wheezy', 'jessie'],
   dist: m.prop("wheezy"),
-  branchopts: ['', '-testing'],
+  branchopts: ['', '-testing', '-firefly'],
   branch: m.prop(""),
   branchdesc: function(branch) {
     if (branch == '') return 'Stable';
