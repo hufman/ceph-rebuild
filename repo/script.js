@@ -176,7 +176,11 @@ buildlog = function() {
   };
   function load_build_log() {
     function reqComplete() {
-      m.render(document.getElementById('buildlog'), view(request.responseText));
+      if (request.status == 200) {
+        m.render(document.getElementById('buildlog'), view(request.responseText));
+      } else {
+        m.render(document.getElementById('buildlog'), view('Idle'));
+      }
     }
     var request = new XMLHttpRequest();
     request.addEventListener("load", reqComplete, false);
