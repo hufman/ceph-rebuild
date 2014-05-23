@@ -152,8 +152,12 @@ buildstatus = function() {
 
   function load_build_status() {
     function reqComplete() {
-      var data = JSON.parse(request.responseText);
-      m.render(document.getElementById('buildstatus'), view(data));
+      if (request.status == 200) {
+        var data = JSON.parse(request.responseText);
+        m.render(document.getElementById('buildstatus'), view(data));
+      } else {
+        m.render(document.getElementById('buildstatus'), m('div', 'Build Status Unavailable'));
+      }
     }
     var request = new XMLHttpRequest();
     request.addEventListener("load", reqComplete, false);
