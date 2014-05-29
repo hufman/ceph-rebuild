@@ -153,7 +153,7 @@ buildstatus = function() {
   function load_build_status() {
     function reqComplete() {
       window.setTimeout(load_build_status, 60000);
-      if (request.status == 200) {
+      if (request.status == 200 || request.status == 304) {
         var data = JSON.parse(request.responseText);
         m.render(document.getElementById('buildstatus'), view(data));
       } else {
@@ -181,7 +181,7 @@ buildlog = function() {
   function load_build_log() {
     function reqComplete() {
       window.setTimeout(load_build_log, 2000);
-      if (request.status == 200) {
+      if (request.status == 200 || request.status == 304) {
         m.render(document.getElementById('buildlog'), view(request.responseText));
       } else {
         m.render(document.getElementById('buildlog'), view('Idle'));
