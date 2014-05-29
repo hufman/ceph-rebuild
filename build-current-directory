@@ -45,10 +45,11 @@ fi
 
 # set up build status
 child=0
-trap "kill $child" SIGINT SIGTERM EXIT
+#trap "kill -- -$BASHPID" EXIT
 ln -s "$newversion"_"$arch".build "current.build"
 sh -c "while true; do sleep 2; tail -n 20 current.build > tail.build; done" &
 child=$!
+trap "kill $child || true" SIGINT SIGTERM EXIT
 
 # build the thing
 builder="${release}-${arch}"
